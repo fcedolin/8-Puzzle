@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 public class puzzle{
   static HashSet<String> visitedStates = new HashSet<String>();
   static String goalState;
+  static int numVisitedBFS = 0;
 
   public static void main(String[] args) {
 
@@ -32,7 +33,8 @@ public class puzzle{
     System.out.println("Goal state");
     printPuzzle(goalState);
     //Find goal node
-    puzzleNode goalNode = BFS(initialStateStr);
+    // puzzleNode goalNode = BFS(initialStateStr);
+    puzzleNode goalNode = ASearchH1(initialStateStr);
     //construct path
     solution = solutionPath(goalNode);
     //print path
@@ -97,37 +99,50 @@ public class puzzle{
       visitedStates.add(workingState);
       //Work on children, sides first
       if(zeroPos % 3 == 0){//left side, check right
-        children = getChildren(frontier, workingNode, zeroPos, zeroPos+1);
+        children = getChildren(workingNode, zeroPos, zeroPos+1);
         if(isGoal(children))
           return children;
+        if(children != null)
+          frontier.add(children);
       }
       if(zeroPos % 3 == 1){//center, check left and right
-        children = getChildren(frontier, workingNode, zeroPos, zeroPos+1);
+        children = getChildren(workingNode, zeroPos, zeroPos+1);
         if(isGoal(children))
           return children;
+        if(children != null)
+          frontier.add(children);
 
-        children = getChildren(frontier, workingNode, zeroPos, zeroPos-1);
+        children = getChildren(workingNode, zeroPos, zeroPos-1);
         if(isGoal(children))
           return children;
+        if(children != null)
+          frontier.add(children);
       }
       if(zeroPos % 3 == 2){//right side, check left
-        children = getChildren(frontier, workingNode, zeroPos, zeroPos-1);
+        children = getChildren(workingNode, zeroPos, zeroPos-1);
         if(isGoal(children))
           return children;
+        if(children != null)
+          frontier.add(children);
       }
       //work on children up and down
       if(zeroPos - 3 > -1){//up
-        children = getChildren(frontier, workingNode, zeroPos, zeroPos-3);
+        children = getChildren(workingNode, zeroPos, zeroPos-3);
         if(isGoal(children))
           return children;
+        if(children != null)
+          frontier.add(children);
       }
       if(zeroPos + 3 < 9){//down
-        children = getChildren(frontier, workingNode, zeroPos, zeroPos+3);
+        children = getChildren(workingNode, zeroPos, zeroPos+3);
         if(isGoal(children))
           return children;
+        if(children != null)
+          frontier.add(children);
       }
     }while(!frontier.isEmpty() && (workingNode = frontier.remove()) != null); //review statement
-    return null;
+    System.out.println("ERROR");
+    return null; //exit if null
   }//BFS
 
   /**
@@ -149,12 +164,11 @@ public class puzzle{
    * @param newZeroPos is the position that zero will have in the child
    * @return the new child node
    */
-  public static puzzleNode getChildren(LinkedList<puzzleNode> frontier, puzzleNode workingNode, int zeroPos, int newZeroPos){
+  public static puzzleNode getChildren(puzzleNode workingNode, int zeroPos, int newZeroPos){
     String childrenStr = swapChars(workingNode.getState(), zeroPos, newZeroPos);
     if(visitedStates.contains(childrenStr))
       return null;
     puzzleNode childrenNode = new puzzleNode(childrenStr, workingNode, newZeroPos);
-    frontier.add(childrenNode);
     visitedStates.add(childrenStr);
     return childrenNode;
   }//getChildren
@@ -172,6 +186,124 @@ public class puzzle{
     sb.setCharAt(j, stateStr.charAt(i));
     return sb.toString();
   }//swapChars
+
+
+  /**
+   * perform A* searchfrom initial node to goal node
+   * @param initialStateStr is the String with the initial state
+   * @return puzzleNode goal node
+   */
+  public static puzzleNode ASearchH1(String initialStateStr){
+    int zeroPos;
+    puzzleNode workingNode;
+    puzzleNode children;
+    String childrenStr;
+    String workingState;
+    int rootDist = 0;
+
+    Comparator<puzzleNode> valueSort = Comparator.comparing(puzzleNode::getHeapValue);
+    PriorityQueue<puzzleNode> nodesQueue = new PriorityQueue<>( valueSort );
+
+    //create initial node TODO: MOVE TO OTHER FUNCTION
+    for(zeroPos = 0; zeroPos < initialStateStr.length(); zeroPos++){
+      if(initialStateStr.charAt(zeroPos) == '0')
+        break;
+    }
+    puzzleNode initialState = new puzzleNode(initialStateStr, null, zeroPos, 0);
+
+    //check if node if goal
+    if(isGoal(initialState))
+      return initialState;
+
+    //perform search
+    workingNode = initialState;
+    do{
+      workingState = workingNode.getState();
+      rootDist = workingNode.getHeapValue() + 1;
+      zeroPos = workingNode.getZeroPos();
+      visitedStates.add(workingState);
+
+      //Work on children, sides first
+      if(zeroPos % 3 == 0){//left side, check right
+        children = getChildren(workingNode, zeroPos, zeroPos+1);
+        if(isGoal(children))
+          return children;
+          if(children != null){
+            children.setHeapValue(rootDist + heuristic1(children.getState()));
+            nodesQueue.add(children);
+          }
+      }
+      if(zeroPos % 3 == 1){//center, check left and right
+        children = getChildren(workingNode, zeroPos, zeroPos+1);
+        if(isGoal(children))
+          return children;
+          if(children != null){
+            children.setHeapValue(rootDist + heuristic1(children.getState()));
+            nodesQueue.add(children);
+          }
+
+        children = getChildren(workingNode, zeroPos, zeroPos-1);
+        if(isGoal(children))
+          return children;
+          if(children != null){
+            children.setHeapValue(rootDist + heuristic1(children.getState()));
+            nodesQueue.add(children);
+          }
+      }
+      if(zeroPos % 3 == 2){//right side, check left
+        children = getChildren(workingNode, zeroPos, zeroPos-1);
+        if(isGoal(children))
+          return children;
+          if(children != null){
+            children.setHeapValue(rootDist + heuristic1(children.getState()));
+            nodesQueue.add(children);
+          }
+      }
+      //work on children up and down
+      if(zeroPos - 3 > -1){//up
+        children = getChildren(workingNode, zeroPos, zeroPos-3);
+        if(isGoal(children))
+          return children;
+          if(children != null){
+            children.setHeapValue(rootDist + heuristic1(children.getState()));
+            nodesQueue.add(children);
+          }
+      }
+      if(zeroPos + 3 < 9){//down
+        children = getChildren(workingNode, zeroPos, zeroPos+3);
+        if(isGoal(children))
+          return children;
+          if(children != null){
+            children.setHeapValue(rootDist + heuristic1(children.getState()));
+            nodesQueue.add(children);
+          }
+      }
+    }while((workingNode = nodesQueue.poll()) != null);
+    System.out.println("ERROR");
+    return null; //exit if null
+
+
+
+  }//ASearchH1
+
+  /**
+   * heuristic1 calculates the number of characters out of order in the current state
+   * @param state is the current state for which we need to calculate the difference
+   * @return the number of character our of order
+   */
+  public static int heuristic1(String state){
+    char c;
+    int counter = 0;
+    for(int i = 0; i < 9; i++){
+      c = state.charAt(i);
+      if(c != '0'){
+        if(c != goalState.charAt(i))
+          counter++;
+      }
+    }
+    return counter;
+
+  }//heuristic1
 
   /**
    * solutionPath traces back the solution from the goal node
