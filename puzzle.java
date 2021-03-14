@@ -58,7 +58,7 @@ public class puzzle{
     resetAll(); //reset all variable for next search
 
     //perform A* with h1
-    System.out.println("Performing A* serach with h1");
+    System.out.println("Performing A* search with h1");
     goalNode = ASearch(initialState, 1);
     if(goalNode == null){
       System.out.println("ERROR finding solution in A* h1.");
@@ -70,7 +70,7 @@ public class puzzle{
     resetAll(); //reset all variable for next search
 
     //perform A* with h2
-    System.out.println("Performing A* serach with h2");
+    System.out.println("Performing A* search with h2");
     goalNode = ASearch(initialState, 2);
     if(goalNode == null){
       System.out.println("ERROR finding solution in A* h2.");
